@@ -1,1 +1,5 @@
 .idea
+.gradle
+androidApp/build
+buildSrc/build
+build
