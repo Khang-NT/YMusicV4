@@ -18,5 +18,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "YMusicV4"
 
+include(":common")
+include(":commonUi")
 include(":androidApp")
 includeBuild("YMusicLegacy")

@@ -3,3 +3,4 @@
 androidApp/build
 buildSrc/build
 build
+.kotlin
