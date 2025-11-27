@@ -1,0 +1,3 @@
+[submodule "YMusicLegacy"]
+	path = YMusicLegacy
+	url = git@github.com:Khang-NT/YMusic.git
