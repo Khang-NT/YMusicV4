@@ -1,5 +1,5 @@
 object Versions {
-    const val kotlin = "2.1.0"
+    const val kotlin = "2.2.21"
     const val agp = "8.7.3"
     const val compileSdk = 35
     const val minSdk = 24
@@ -9,8 +9,10 @@ object Versions {
     const val coroutines = "1.9.0"
     const val ktor = "3.0.2"
     const val kotlinxSerialization = "1.7.3"
-    const val kotlinxDateTime = "0.6.1"
+    const val kotlinxDateTime = "0.7.1"
     const val composeMultiplatform = "1.7.1"
+    const val okhttp = "5.3.0"
+    const val okio = "3.9.1"
 
     // AndroidX
     const val coreKtx = "1.15.0"
@@ -61,5 +63,17 @@ object Libs {
         const val junit = "junit:junit:${Versions.junit}"
         const val junitExt = "androidx.test.ext:junit:${Versions.junitExt}"
         const val espresso = "androidx.test.espresso:espresso-core:${Versions.espresso}"
+    }
+
+    object OkHttp {
+        const val core = "com.squareup.okhttp3:okhttp:${Versions.okhttp}"
+    }
+
+    object Okio {
+        const val core = "com.squareup.okio:okio:${Versions.okio}"
+    }
+
+    object Doist {
+        const val normalizer = "com.doist.x:normalize:1.3.0"
     }
 }

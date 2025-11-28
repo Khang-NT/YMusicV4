@@ -4,3 +4,7 @@ androidApp/build
 buildSrc/build
 build
 .kotlin
+temp
+.DS_Store
+.opencode
+.claude
