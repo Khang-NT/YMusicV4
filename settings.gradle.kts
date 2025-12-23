@@ -21,5 +21,6 @@ rootProject.name = "YMusicV4"
 include(":common")
 include(":commonUi")
 include(":androidApp")
+include(":kmpCommon")
 include(":kmpHttp")
 includeBuild("YMusicLegacy")
