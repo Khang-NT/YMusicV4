@@ -143,3 +143,16 @@ internal fun okio.Closeable.closeQuietly() {
     } catch (_: IOException) {
     }
 }
+
+/**
+ * Returns the Host header value for this URL.
+ * Includes port only if it differs from the default port for the scheme.
+ */
+internal fun kmphttp.HttpUrl.toHostHeader(includeDefaultPort: Boolean = false): String {
+    val host = if (':' in host) "[$host]" else host
+    return if (includeDefaultPort || port != kmphttp.HttpUrl.defaultPort(scheme)) {
+        "$host:$port"
+    } else {
+        host
+    }
+}
