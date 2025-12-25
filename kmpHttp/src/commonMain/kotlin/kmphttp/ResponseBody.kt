@@ -1,6 +1,5 @@
 package kmphttp
 
-import okio.BufferedSource
 import okio.ByteString
 import okio.Closeable
 
@@ -81,28 +80,7 @@ expect abstract class ResponseBody : Closeable {
      */
     abstract fun contentLength(): Long
 
-    abstract fun source(): BufferedSource
-
-    /**
-     * Returns the response as a byte array.
-     *
-     * This method loads entire response body into memory. If the response body is very large this
-     * may trigger an [OutOfMemoryError]. Prefer to stream the response body if this is a
-     * possibility for your response.
-     */
-    fun bytes(): ByteArray
-
-    /**
-     * Returns the response as a [ByteString].
-     *
-     * This method loads entire response body into memory. If the response body is very large this
-     * may trigger an [OutOfMemoryError]. Prefer to stream the response body if this is a
-     * possibility for your response.
-     */
-    fun byteString(): ByteString
-
     override fun close()
-
 
     companion object {
         /** Empty response body with no content-type. Closing this response body does nothing. */
@@ -110,11 +88,14 @@ expect abstract class ResponseBody : Closeable {
     }
 }
 
+expect fun ResponseBody.asyncSource(): AsyncSource
+
 /**
- * Returns the response as a UTF8 string.
- *
- * This method loads entire response body into memory. If the response body is very large this
- * may trigger an [OutOfMemoryError]. Prefer to stream the response body if this is a
- * possibility for your response.
+ * Load entire response body into memory, stored in ByteString.
  */
-fun ResponseBody.utf8String() = byteString().utf8()
+expect suspend fun ResponseBody.byteString(): ByteString
+
+/**
+ * Load entire response body into memory and decode it as utf8 string.
+ */
+expect suspend fun ResponseBody.utf8String(): String

@@ -1,5 +1,6 @@
 package kmphttp
 
+import kmphttp.internal.AsyncChain
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -31,27 +32,12 @@ open class KmpHttpClient internal constructor(
         options: RequestOptions = defaultRequestOptions,
         timeout: Duration? = defaultExecuteTimeout
     ): Response = withContext(defaultDispatcher) {
-        val asyncChain = AsyncChain(0, request, options)
+        val asyncChain = AsyncChain(interceptors, 0, engine::execute, request, options)
         if (timeout == null) {
             asyncChain.proceed(request)
         } else {
             withTimeout(timeout) {
                 asyncChain.proceed(request)
-            }
-        }
-    }
-
-    private inner class AsyncChain(
-        val interceptorIndex: Int,
-        override val request: Request,
-        override val options: RequestOptions
-    ) : AsyncInterceptor.Chain {
-        override suspend fun proceed(request: Request): Response {
-            if (interceptorIndex == interceptors.size) {
-                return engine.execute(request, options)
-            } else {
-                val interceptor = interceptors[interceptorIndex]
-                return interceptor.intercept(AsyncChain(interceptorIndex + 1, request, options))
             }
         }
     }

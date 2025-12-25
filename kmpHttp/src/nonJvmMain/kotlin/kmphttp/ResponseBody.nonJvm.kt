@@ -16,11 +16,12 @@
 package kmphttp
 
 import kmphttp.internal.closeQuietly
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import okio.Buffer
-import okio.BufferedSource
 import okio.ByteString
 import okio.Closeable
-import okio.IOException
 import okio.use
 
 actual abstract class ResponseBody : Closeable {
@@ -29,54 +30,36 @@ actual abstract class ResponseBody : Closeable {
 
   actual abstract fun contentLength(): Long
 
-  actual abstract fun source(): BufferedSource
+  abstract fun asyncSource(): AsyncSource
 
-  actual fun bytes() = consumeSource(BufferedSource::readByteArray) { it.size }
-
-  actual fun byteString() = consumeSource(BufferedSource::readByteString) { it.size }
-
-  private inline fun <T : Any> ResponseBody.consumeSource(
-    consumer: (BufferedSource) -> T,
-    sizeMapper: (T) -> Int,
-  ): T {
-    val contentLength = contentLength()
-    if (contentLength > Int.MAX_VALUE) {
-      throw IOException("Cannot buffer entire body for content length: $contentLength")
-    }
-
-    val bytes = source().use(consumer)
-    val size = sizeMapper(bytes)
-    if (contentLength != -1L && contentLength != size.toLong()) {
-      throw IOException("Content-Length ($contentLength) and stream length ($size) disagree")
-    }
-    return bytes
-  }
-
-  actual override fun close(): Unit = source().closeQuietly()
+  actual override fun close(): Unit = asyncSource().closeQuietly()
 
   actual companion object {
-    actual val EMPTY: ResponseBody = ByteString.EMPTY.toResponseBody()
-
-    fun ByteArray.toResponseBody(contentType: MediaType? = null): ResponseBody =
-      Buffer()
-        .write(this)
-        .asResponseBody(contentType, size.toLong())
-
-    fun ByteString.toResponseBody(contentType: MediaType? = null): ResponseBody =
-      Buffer()
-        .write(this)
-        .asResponseBody(contentType, size.toLong())
-
-    fun BufferedSource.asResponseBody(
-      contentType: MediaType? = null,
-      contentLength: Long = -1L,
-    ): ResponseBody =
-      object : ResponseBody() {
-        override fun contentType(): MediaType? = contentType
-
-        override fun contentLength(): Long = contentLength
-
-        override fun source(): BufferedSource = this@asResponseBody
-      }
+    actual val EMPTY: ResponseBody = object : ResponseBody() {
+      override fun contentType(): MediaType? = null
+      override fun contentLength(): Long = 0
+      override fun asyncSource() = AsyncSource.EMPTY
+    }
   }
 }
+
+actual fun ResponseBody.asyncSource(): AsyncSource {
+    return this.asyncSource()
+}
+
+actual suspend fun ResponseBody.byteString(): ByteString = withContext(Dispatchers.IO) {
+    asyncSource().use { source ->
+        val buffer = Buffer()
+        buffer.writeAll(source)
+        buffer.readByteString()
+    }
+}
+
+actual suspend fun ResponseBody.utf8String() = withContext(Dispatchers.IO) {
+    asyncSource().use { source ->
+        val buffer = Buffer()
+        buffer.writeAll(source)
+        buffer.readUtf8()
+    }
+}
+

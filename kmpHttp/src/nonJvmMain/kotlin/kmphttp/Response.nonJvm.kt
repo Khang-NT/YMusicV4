@@ -21,8 +21,6 @@ import kmphttp.HttpStatus.HTTP_MULT_CHOICE
 import kmphttp.HttpStatus.HTTP_PERM_REDIRECT
 import kmphttp.HttpStatus.HTTP_SEE_OTHER
 import kmphttp.HttpStatus.HTTP_TEMP_REDIRECT
-import kmphttp.ResponseBody.Companion.asResponseBody
-import okio.Buffer
 import okio.Closeable
 
 actual class Response internal constructor(
@@ -40,27 +38,6 @@ actual class Response internal constructor(
 ) : Closeable {
 
     actual val isSuccessful: Boolean = code in 200..299
-
-    /**
-     * Peeks up to [byteCount] bytes from the response body and returns them as a new response
-     * body. If fewer than [byteCount] bytes are in the response body, the full response body is
-     * returned. If more than [byteCount] bytes are in the response body, the returned value
-     * will be truncated to [byteCount] bytes.
-     *
-     * It is an error to call this method after the body has been consumed.
-     *
-     * **Warning:** this method loads the requested bytes into memory. Most applications should set
-     * a modest limit on `byteCount`, such as 1 MiB.
-     */
-    fun peekBody(byteCount: Long): ResponseBody {
-        val peeked = body.source().peek()
-        val buffer = Buffer()
-        peeked.request(byteCount)
-        buffer.write(peeked, minOf(byteCount, peeked.buffer.size))
-        return buffer.asResponseBody(body.contentType(), buffer.size)
-    }
-
-    actual fun newBuilder() = ResponseBuilder(this)
 
     actual val isRedirect: Boolean =
         when (code) {
@@ -84,9 +61,10 @@ actual class Response internal constructor(
         body.close()
     }
 
+    actual fun newBuilder() = ResponseBuilder(this)
+
     actual override fun toString(): String =
         "Response{protocol=$protocol, code=$code, message=$message, url=${request.url}}"
-
 
 }
 
