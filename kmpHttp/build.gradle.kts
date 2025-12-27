@@ -83,6 +83,10 @@ kotlin {
         iosMain.dependencies {
         }
 
+        val jvmTest by getting {
+            dependsOn(commonTest)
+        }
+
         val nonJvmTest by creating {
             dependsOn(commonTest)
         }
