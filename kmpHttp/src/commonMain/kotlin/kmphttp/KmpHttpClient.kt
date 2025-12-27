@@ -50,8 +50,6 @@ class KmpHttpClientBuilder internal constructor(
     private var followRedirects: Boolean,
     private var followSslRedirects: Boolean,
     private var executeTimeout: Duration?,
-    private var readTimeout: Duration,
-    private var writeTimeout: Duration,
     private var defaultDispatcher: CoroutineDispatcher,
     private var httpEngine: HttpEngine?
 ) {
@@ -61,8 +59,6 @@ class KmpHttpClientBuilder internal constructor(
         followRedirects = true,
         followSslRedirects = true,
         executeTimeout = 10.seconds,
-        readTimeout = 10.seconds,
-        writeTimeout = 10.seconds,
         defaultDispatcher = Dispatchers.IO,
         httpEngine = null
     )
@@ -72,8 +68,6 @@ class KmpHttpClientBuilder internal constructor(
         followRedirects = instance.defaultRequestOptions.followRedirects,
         followSslRedirects = instance.defaultRequestOptions.followSslRedirects,
         executeTimeout = instance.defaultExecuteTimeout,
-        readTimeout = instance.defaultRequestOptions.readTimeout,
-        writeTimeout = instance.defaultRequestOptions.writeTimeout,
         defaultDispatcher = instance.defaultDispatcher,
         httpEngine = instance.engine
     )
@@ -107,32 +101,6 @@ class KmpHttpClientBuilder internal constructor(
         this.executeTimeout = duration
     }
 
-    /**
-     * Sets the default read timeout for new connections. A value of 0 means no timeout, otherwise
-     * values must be between 1 and [Integer.MAX_VALUE] when converted to milliseconds.
-     *
-     * The read timeout is applied to both the TCP socket and for individual read IO operations
-     * including on [Source] of the [Response]. The default value is 10 seconds.
-     *
-     * @see Socket.setSoTimeout
-     * @see Source.timeout
-     */
-    fun readTimeout(duration: Duration) = apply {
-        this.readTimeout = duration
-    }
-
-    /**
-     * Sets the default write timeout for new connections. A value of 0 means no timeout, otherwise
-     * values must be between 1 and [Integer.MAX_VALUE] when converted to milliseconds.
-     *
-     * The write timeout is applied for individual write IO operations. The default value is 10
-     * seconds.
-     *
-     * @see Sink.timeout
-     */
-    fun writeTimeout(duration: Duration) = apply {
-        this.writeTimeout = duration
-    }
 
     fun httpEngine(engine: HttpEngine) = apply {
         this.httpEngine = engine
@@ -143,9 +111,7 @@ class KmpHttpClientBuilder internal constructor(
             interceptors = interceptors.toList(),
             defaultRequestOptions = RequestOptions(
                 followRedirects,
-                followSslRedirects,
-                readTimeout,
-                writeTimeout
+                followSslRedirects
             ),
             defaultExecuteTimeout = executeTimeout,
             defaultDispatcher = defaultDispatcher,

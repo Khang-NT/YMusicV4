@@ -1,15 +1,19 @@
 package kmphttp
 
+import kmphttp.internal.runIoInterruptible
 import okio.Buffer
 import okio.ByteString
 
 actual typealias ResponseBody = okhttp3.ResponseBody
 
+
 actual fun ResponseBody.asyncSource(): AsyncSource {
     val source = this.source()
     return object : AsyncSource {
         override suspend fun read(sink: Buffer, byteCount: Long): Long {
-            return source.read(sink, byteCount)
+            return runIoInterruptible {
+                source.read(sink, byteCount)
+            }
         }
 
         override fun close() {
@@ -19,9 +23,13 @@ actual fun ResponseBody.asyncSource(): AsyncSource {
 }
 
 actual suspend fun ResponseBody.byteString(): ByteString {
-    return this.byteString()
+    return runIoInterruptible {
+        this.byteString()
+    }
 }
 
 actual suspend fun ResponseBody.utf8String(): String {
-    return this.string()
+    return runIoInterruptible {
+        this.string()
+    }
 }
