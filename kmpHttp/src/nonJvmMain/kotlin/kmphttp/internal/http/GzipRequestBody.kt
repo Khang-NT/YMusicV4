@@ -15,23 +15,61 @@
  */
 package kmphttp.internal.http
 
+import kmphttp.AsyncSource
 import kmphttp.RequestBody
-import okio.BufferedSink
+import okio.Buffer
 import okio.GzipSink
-import okio.buffer
-import okio.use
 
 internal class GzipRequestBody(
-  val delegate: RequestBody,
+    val delegate: RequestBody,
 ) : RequestBody() {
-  override fun contentType() = delegate.contentType()
+    override fun contentType() = delegate.contentType()
 
-  // We don't know the compressed length in advance!
-  override fun contentLength() = -1L
+    // We don't know the compressed length in advance!
+    override fun contentLength() = -1L
 
-  override fun writeTo(sink: BufferedSink) {
-    GzipSink(sink).buffer().use(delegate::writeTo)
-  }
+    override fun openRead(): AsyncSource {
+        return delegate.openRead().gzipCompress()
+    }
 
-  override fun isOneShot() = delegate.isOneShot()
+    override fun isOneShot() = delegate.isOneShot()
+}
+
+
+internal fun AsyncSource.gzipCompress(): AsyncSource {
+    val delegate = this
+    val tempBuffer = Buffer()
+    val compressedBuffer = Buffer()
+    val gzipSink = GzipSink(compressedBuffer)
+    var ended = false
+    return object : AsyncSource {
+        override suspend fun read(sink: Buffer, byteCount: Long): Long {
+            if (compressedBuffer.size >= byteCount || ended) {
+                if (!compressedBuffer.exhausted()) return compressedBuffer.read(sink, byteCount)
+                return -1
+            } else {
+                val wantedBufferSize = maxOf(byteCount, 16 * 1024)
+                while (compressedBuffer.size < wantedBufferSize) {
+                    val bytesRead = delegate.read(tempBuffer, 8 * 1024)
+                    if (bytesRead == -1L) {
+                        gzipSink.close()
+                        ended = true
+                        break
+                    } else {
+                        gzipSink.write(tempBuffer, tempBuffer.size)
+                        check(tempBuffer.size == 0L)
+                    }
+                }
+                return when {
+                    !compressedBuffer.exhausted() -> compressedBuffer.read(sink, byteCount)
+                    ended -> -1L
+                    else -> throw IllegalStateException()
+                }
+            }
+        }
+
+        override fun close() {
+            delegate.close()
+        }
+    }
 }
