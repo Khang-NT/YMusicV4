@@ -15,6 +15,7 @@
  */
 package kmphttp.internal.http
 
+import kmpcommon.kilobytes
 import kmphttp.AsyncSource
 import kotlinx.coroutines.runBlocking
 import okio.Buffer
@@ -41,7 +42,7 @@ class GzipCompressTest {
     @Test
     fun compressLargeData() = runBlocking {
         // Create data larger than internal buffer size (16KB)
-        verifyCompression("x".repeat(32 * 1024))
+        verifyCompression("x".repeat(32.kilobytes.toInt()))
     }
 
     @Test
@@ -81,7 +82,7 @@ class GzipCompressTest {
             "",
             "Hello",
             "Hello, World! ".repeat(100),
-            "x".repeat(32 * 1024),
+            "x".repeat(32.kilobytes.toInt()),
             "Mixed content 123 !@# with special chars: ñ, 日本語",
         )
 

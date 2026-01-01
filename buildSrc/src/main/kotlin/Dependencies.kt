@@ -12,7 +12,7 @@ object Versions {
     const val kotlinxDateTime = "0.7.1"
     const val composeMultiplatform = "1.7.1"
     const val okhttp = "5.3.0"
-    const val okio = "3.9.1"
+    const val okio = "3.16.2"
 
     // AndroidX
     const val coreKtx = "1.15.0"

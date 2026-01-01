@@ -46,17 +46,17 @@ expect class MediaType {
     override fun equals(other: Any?): Boolean
 
     override fun hashCode(): Int
+}
 
-    companion object {
-        /**
-         * Returns a media type for this string.
-         *
-         * @throws IllegalArgumentException if this is not a well-formed media type.
-         */
-        fun String.toMediaType(): MediaType
+expect object MediaTypeX {
+    /**
+     * Returns a media type for this string.
+     *
+     * @throws IllegalArgumentException if this is not a well-formed media type.
+     */
+    fun String.toMediaType(): MediaType
 
-        /** Returns a media type for this, or null if this is not a well-formed media type. */
-        fun String.toMediaTypeOrNull(): MediaType?
-    }
+    /** Returns a media type for this, or null if this is not a well-formed media type. */
+    fun String.toMediaTypeOrNull(): MediaType?
 }
 

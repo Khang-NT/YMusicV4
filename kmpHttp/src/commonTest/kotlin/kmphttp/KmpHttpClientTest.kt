@@ -1,7 +1,10 @@
 package kmphttp
 
+import kmphttp.MediaTypeX.toMediaType
+import kmphttp.RequestBodyX.asOneshotRequestBody
 import kmphttp.RequestBodyX.toRequestBody
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import okio.Buffer
@@ -80,8 +83,8 @@ class KmpHttpClientTest {
             .build()
 
         client.execute(request).use { response ->
-            assertEquals(200, response.code)
             val bodyString = response.body.utf8String()
+            assertEquals(200, response.code, bodyString)
             assertTrue(bodyString.contains("Hello, World!"))
         }
     }
@@ -150,6 +153,25 @@ class KmpHttpClientTest {
             .build()
         client.execute(request500).use { response ->
             assertEquals(500, response.code)
+        }
+    }
+
+    @Test
+    fun testExpect100Continue(): Unit = runBlocking {
+        val client = createClient()
+
+        // POST with Expect: 100-continue header
+        // Server should respond with 100 Continue, then client sends body, then 200 OK
+        val request = RequestBuilder()
+            .url("https://httpbin.org/post")
+            .post("test body".toRequestBody(null))
+            .header("Expect", "100-continue")
+            .build()
+
+        client.execute(request).use { response ->
+            val bodyString = response.body.utf8String()
+            assertEquals(200, response.code, bodyString)
+            assertTrue(bodyString.contains("test body"))
         }
     }
 
@@ -395,6 +417,61 @@ class KmpHttpClientTest {
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    fun testSlowStreamingRequestBody(): Unit = runBlocking {
+        val client = createClient()
+
+        // AsyncSource that produces data slowly (100ms delay between reads)
+        val chunk = ByteArray(1024) { 'x'.code.toByte() }
+        val slowSource = object : AsyncSource {
+            private var remaining = 100
+
+            override suspend fun read(sink: Buffer, byteCount: Long): Long {
+                if (remaining <= 0) return -1L
+                delay(100.milliseconds)
+                remaining--
+                sink.write(chunk)
+                return chunk.size.toLong()
+            }
+
+            override fun close() {}
+        }
+
+        val request = RequestBuilder()
+            .url("https://httpbin.org/post")
+            .post(slowSource.asOneshotRequestBody())
+            .header("Expect", "100-continue")
+            .build()
+
+        client.execute(request).use { response ->
+            val bodyString = response.body.utf8String()
+            assertEquals(200, response.code, bodyString)
+            assertTrue(bodyString.contains("xxxxx"), "Response should contain streamed data")
+        }
+    }
+
+    @Test
+    fun testGzipRequestBody(): Unit = runBlocking {
+        val client = createClient()
+
+        val request = RequestBuilder()
+            .url("https://httpbin.org/post")
+            .post("Hello, Gzip World!".toRequestBody("text/plain".toMediaType()))
+            .gzip()
+            .build()
+
+        // Verify Content-Encoding header was set
+        assertEquals("gzip", request.header("Content-Encoding"))
+
+        client.execute(request).use { response ->
+            val bodyString = response.body.utf8String()
+            assertEquals(200, response.code, bodyString)
+            // todo: parse and verify gzipped data
+            // httpbin echoes headers, verify gzip was sent
+            assertTrue(bodyString.contains("\"Content-Encoding\": \"gzip\""), bodyString)
         }
     }
 }

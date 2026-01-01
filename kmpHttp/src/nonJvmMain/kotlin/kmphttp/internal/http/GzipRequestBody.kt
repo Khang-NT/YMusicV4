@@ -15,6 +15,7 @@
  */
 package kmphttp.internal.http
 
+import kmpcommon.kilobytes
 import kmphttp.AsyncSource
 import kmphttp.RequestBody
 import okio.Buffer
@@ -48,9 +49,9 @@ internal fun AsyncSource.gzipCompress(): AsyncSource {
                 if (!compressedBuffer.exhausted()) return compressedBuffer.read(sink, byteCount)
                 return -1
             } else {
-                val wantedBufferSize = maxOf(byteCount, 16 * 1024)
+                val wantedBufferSize = maxOf(byteCount, 16.kilobytes)
                 while (compressedBuffer.size < wantedBufferSize) {
-                    val bytesRead = delegate.read(tempBuffer, 8 * 1024)
+                    val bytesRead = delegate.read(tempBuffer, wantedBufferSize)
                     if (bytesRead == -1L) {
                         gzipSink.close()
                         ended = true
