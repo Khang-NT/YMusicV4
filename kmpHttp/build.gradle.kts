@@ -28,7 +28,9 @@ kotlin {
     listOf(
         iosX64(),
         iosArm64(),
-        iosSimulatorArm64()
+        iosSimulatorArm64(),
+        macosX64(),
+        macosArm64()
     ).forEach {
         it.binaries.framework {
             baseName = "kmpHttp"
@@ -43,10 +45,9 @@ kotlin {
          * commonMain
          * ├── jvmMain
          * └── nonJvmMain
-         *     ├── iosMain
-         *     │   ├── iosArm64Main
-         *     │   ├── iosX64Main
-         *     │   └── iosSimulatorArm64Main
+         *     ├── appleMain
+         *     │   ├── iosMain (iosArm64, iosX64, iosSimulatorArm64)
+         *     │   └── macosMain (macosArm64, macosX64)
          *     └── ...linuxX64Main
          */
         val commonMain by getting
@@ -63,9 +64,9 @@ kotlin {
             }
         }
 
-        // iOS targets
-        val iosMain by getting
-        iosMain.dependsOn(nonJvmMain)
+        // Apple targets
+        val appleMain by getting
+        appleMain.dependsOn(nonJvmMain)
 
         commonMain.dependencies {
             implementation(Libs.Kotlinx.coroutinesCore)
@@ -82,7 +83,7 @@ kotlin {
             implementation(Libs.OkHttp.core)
         }
 
-        iosMain.dependencies {
+        appleMain.dependencies {
         }
 
         val jvmTest by getting
@@ -90,8 +91,8 @@ kotlin {
         val nonJvmTest by creating {
             dependsOn(commonTest)
         }
-        val iosTest by getting
-        iosTest.dependsOn(nonJvmTest)
+        val appleTest by getting
+        appleTest.dependsOn(nonJvmTest)
     }
 }
 
