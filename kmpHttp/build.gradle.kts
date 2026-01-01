@@ -7,8 +7,10 @@ plugins {
 kotlin {
     targets.all {
         compilations.all {
-            compilerOptions.configure {
-                freeCompilerArgs.add("-Xexpect-actual-classes")
+            compileTaskProvider.configure{
+                compilerOptions {
+                    freeCompilerArgs.add("-Xexpect-actual-classes")
+                }
             }
         }
     }
@@ -34,6 +36,8 @@ kotlin {
         }
     }
 
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
         /**
          * commonMain
@@ -49,7 +53,7 @@ kotlin {
         val commonTest by getting
         // JVM source set
         val jvmMain by getting {
-            dependsOn(commonMain)
+//            dependsOn(commonMain)
         }
         // Native intermediate
         val nonJvmMain by creating {
@@ -60,16 +64,14 @@ kotlin {
         }
 
         // iOS targets
-        val iosMain by creating
+        val iosMain by getting
         iosMain.dependsOn(nonJvmMain)
-        val iosArm64Main by getting { dependsOn(iosMain) }
-        val iosX64Main by getting { dependsOn(iosMain) }
-        val iosSimulatorArm64Main by getting { dependsOn(iosMain) }
 
         commonMain.dependencies {
             implementation(Libs.Kotlinx.coroutinesCore)
             implementation(Libs.Kotlinx.dateTime)
             implementation(Libs.Okio.core)
+            implementation(project(":kmpCommon"))
         }
 
         commonTest.dependencies {
@@ -83,17 +85,19 @@ kotlin {
         iosMain.dependencies {
         }
 
-        val jvmTest by getting {
-            dependsOn(commonTest)
-        }
+        val jvmTest by getting
 
         val nonJvmTest by creating {
             dependsOn(commonTest)
         }
-        val iosTest by creating
+        val iosTest by getting
         iosTest.dependsOn(nonJvmTest)
-        val iosArm64Test by getting { dependsOn(iosTest) }
-        val iosX64Test by getting { dependsOn(iosTest) }
-        val iosSimulatorArm64Test by getting { dependsOn(iosTest) }
     }
+}
+
+// Use already-running simulator instead of standalone mode
+tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest>().configureEach {
+    standalone.set(false)
+    device.set("iPhone 15 Pro")
+    enabled = true
 }
